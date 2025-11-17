@@ -1,4 +1,4 @@
-# Student Risk Prediction System - Demo Setup
+# Student Risk Prediction System
 
 ## Quick Start
 
