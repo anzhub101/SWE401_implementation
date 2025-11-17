@@ -4,6 +4,7 @@ import { LoginForm } from './components/Auth/LoginForm';
 import { Dashboard } from './components/Dashboard/Dashboard';
 import { StudentDetail } from './components/StudentDetail/StudentDetail';
 import { ModelUpload } from './components/MLModel/ModelUpload';
+import { StudentDashboard } from './components/Student/StudentDashboard';
 import type { Student, Prediction } from './lib/supabase';
 
 type StudentWithPrediction = Student & { prediction?: Prediction };
@@ -23,6 +24,10 @@ function AppContent() {
 
   if (!user || !profile) {
     return <LoginForm />;
+  }
+
+  if (profile.role === 'student') {
+    return <StudentDashboard />;
   }
 
   return (

@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
-import { supabase, Student, Prediction } from '../../lib/supabase';
+import { supabase, Student, Prediction, DataPipelineRun, ModelTrainingRun } from '../../lib/supabase';
 import { useAuth } from '../../contexts/AuthContext';
 import { RiskChart } from './RiskChart';
 import { StudentList } from './StudentList';
-import { LogOut, Upload } from 'lucide-react';
+import { StudentGrid } from './StudentGrid';
+import { PipelineStatusPanel } from './PipelineStatusPanel';
+import { TrainingStatusPanel } from './TrainingStatusPanel';
+import { LogOut, Upload, LayoutGrid, Table as TableIcon } from 'lucide-react';
 
 type StudentWithPrediction = Student & { prediction?: Prediction };
 
@@ -15,10 +18,17 @@ type Props = {
 export function Dashboard({ onSelectStudent, onUploadModel }: Props) {
   const [students, setStudents] = useState<StudentWithPrediction[]>([]);
   const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'table' | 'visual'>('table');
+  const [pipelineRuns, setPipelineRuns] = useState<DataPipelineRun[]>([]);
+  const [trainingRuns, setTrainingRuns] = useState<ModelTrainingRun[]>([]);
+  const [pipelineLoading, setPipelineLoading] = useState(false);
+  const [trainingLoading, setTrainingLoading] = useState(false);
   const { profile, signOut } = useAuth();
 
   useEffect(() => {
     loadData();
+    loadPipelineRuns();
+    loadTrainingRuns();
   }, []);
 
   const loadData = async () => {
@@ -57,6 +67,112 @@ export function Dashboard({ onSelectStudent, onUploadModel }: Props) {
     }
   };
 
+  const loadPipelineRuns = async () => {
+    const { data, error } = await supabase
+      .from('data_pipeline_runs')
+      .select('*')
+      .order('started_at', { ascending: false })
+      .limit(20);
+
+    if (error) {
+      console.error('Error loading pipeline runs:', error);
+      return;
+    }
+
+    setPipelineRuns(data ?? []);
+  };
+
+  const loadTrainingRuns = async () => {
+    const { data, error } = await supabase
+      .from('model_training_runs')
+      .select('*')
+      .order('started_at', { ascending: false })
+      .limit(20);
+
+    if (error) {
+      console.error('Error loading training runs:', error);
+      return;
+    }
+
+    setTrainingRuns(data ?? []);
+  };
+
+  const simulateRunMetrics = () => ({
+    records_imported: Math.floor(300 + Math.random() * 200),
+    feature_count: Math.floor(20 + Math.random() * 15),
+  });
+
+  const handleRunPipeline = async (triggeredBy: 'manual' | 'scheduler') => {
+    try {
+      setPipelineLoading(true);
+      const { data: inserted, error } = await supabase
+        .from('data_pipeline_runs')
+        .insert({
+          status: 'running',
+          triggered_by: triggeredBy,
+          notes: triggeredBy === 'manual' ? 'Triggered via dashboard' : 'Scheduled import',
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const metrics = simulateRunMetrics();
+
+      await supabase
+        .from('data_pipeline_runs')
+        .update({
+          status: 'completed',
+          ...metrics,
+          completed_at: new Date().toISOString(),
+        })
+        .eq('id', inserted.id);
+
+      await loadPipelineRuns();
+    } catch (err) {
+      console.error('Failed to run pipeline', err);
+    } finally {
+      setPipelineLoading(false);
+    }
+  };
+
+  const handleRunTraining = async () => {
+    try {
+      setTrainingLoading(true);
+      const { data: inserted, error } = await supabase
+        .from('model_training_runs')
+        .insert({
+          status: 'running',
+          triggered_by: 'manual',
+          notes: 'Dashboard-triggered retraining',
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      const accuracy = 0.8 + Math.random() * 0.15;
+      const fairness = 0.75 + Math.random() * 0.2;
+
+      await supabase
+        .from('model_training_runs')
+        .update({
+          status: 'awaiting_approval',
+          accuracy,
+          fairness_score: fairness,
+          completed_at: new Date().toISOString(),
+          deployed_version: `v${(Math.random() * 3 + 2).toFixed(1)}`,
+        })
+        .eq('id', inserted.id);
+
+      await loadTrainingRuns();
+    } catch (err) {
+      console.error('Failed to run training', err);
+    } finally {
+      setTrainingLoading(false);
+    }
+  };
+
   const handleSignOut = async () => {
     try {
       await signOut();
@@ -87,6 +203,26 @@ export function Dashboard({ onSelectStudent, onUploadModel }: Props) {
               </p>
             </div>
             <div className="flex gap-3">
+              <div className="bg-gray-100 rounded-lg p-1 flex items-center">
+                <button
+                  className={`inline-flex items-center gap-1 px-3 py-1 rounded-md text-sm font-medium ${
+                    viewMode === 'table' ? 'bg-white shadow text-gray-900' : 'text-gray-500'
+                  }`}
+                  onClick={() => setViewMode('table')}
+                >
+                  <TableIcon className="w-4 h-4" />
+                  Table
+                </button>
+                <button
+                  className={`inline-flex items-center gap-1 px-3 py-1 rounded-md text-sm font-medium ${
+                    viewMode === 'visual' ? 'bg-white shadow text-gray-900' : 'text-gray-500'
+                  }`}
+                  onClick={() => setViewMode('visual')}
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                  Visual
+                </button>
+              </div>
               <button
                 onClick={onUploadModel}
                 className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
@@ -137,7 +273,16 @@ export function Dashboard({ onSelectStudent, onUploadModel }: Props) {
           </div>
         </div>
 
-        <StudentList students={students} onSelectStudent={onSelectStudent} />
+        {viewMode === 'table' ? (
+          <StudentList students={students} onSelectStudent={onSelectStudent} />
+        ) : (
+          <StudentGrid students={students} onSelectStudent={onSelectStudent} />
+        )}
+
+        <div className="grid lg:grid-cols-2 gap-6 mt-8">
+          <PipelineStatusPanel runs={pipelineRuns} onTrigger={handleRunPipeline} loading={pipelineLoading} />
+          <TrainingStatusPanel runs={trainingRuns} onTrigger={handleRunTraining} loading={trainingLoading} />
+        </div>
       </main>
     </div>
   );

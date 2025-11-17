@@ -42,6 +42,17 @@ export function StudentList({ students, onSelectStudent }: Props) {
     return order[aLevel as keyof typeof order] - order[bLevel as keyof typeof order];
   });
 
+  const getRowHighlight = (level?: string) => {
+    switch (level) {
+      case 'high':
+        return 'bg-red-50/70';
+      case 'medium':
+        return 'bg-yellow-50/70';
+      default:
+        return '';
+    }
+  };
+
   return (
     <div className="bg-white rounded-lg shadow">
       <div className="p-6 border-b border-gray-200">
@@ -74,7 +85,9 @@ export function StudentList({ students, onSelectStudent }: Props) {
               <tr
                 key={student.id}
                 onClick={() => onSelectStudent(student)}
-                className="hover:bg-gray-50 cursor-pointer transition-colors"
+                className={`hover:bg-gray-50 cursor-pointer transition-colors ${getRowHighlight(
+                  student.prediction?.risk_level
+                )}`}
               >
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="flex items-center">

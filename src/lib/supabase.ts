@@ -56,3 +56,30 @@ export type MLModel = {
   uploaded_by: string;
   created_at: string;
 };
+
+export type DataPipelineRun = {
+  id: string;
+  status: 'scheduled' | 'running' | 'completed' | 'failed';
+  triggered_by: 'scheduler' | 'manual';
+  records_imported: number;
+  feature_count: number;
+  notes: string;
+  error_message: string;
+  started_at: string;
+  completed_at: string | null;
+  created_at: string;
+};
+
+export type ModelTrainingRun = {
+  id: string;
+  status: 'queued' | 'running' | 'evaluating' | 'awaiting_approval' | 'deployed' | 'failed';
+  triggered_by: 'scheduler' | 'manual';
+  accuracy: number;
+  fairness_score: number;
+  deployed_version: string;
+  approved_by: string;
+  notes: string;
+  started_at: string;
+  completed_at: string | null;
+  created_at: string;
+};
