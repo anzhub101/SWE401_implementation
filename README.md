@@ -3,21 +3,7 @@
 ## Quick Start
 
 The system is ready to use with sample data already loaded.
-
-### Login Options
-
-**Option 1: Create a new advisor account**
-1. Use the Supabase dashboard to create a user account
-2. Add a profile record with role='advisor'
-
-**Option 2: Use SQL to create demo account**
-```sql
--- Note: You'll need to create the auth user through Supabase Auth
--- Then insert the profile:
-INSERT INTO profiles (id, email, full_name, role)
-VALUES ('your-auth-user-id', 'advisor@demo.com', 'Demo Advisor', 'advisor');
 ```
-
 ## Sample Data Loaded
 
 The system includes:
