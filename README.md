@@ -3,7 +3,7 @@
 ## Quick Start
 
 The system is ready to use with sample data already loaded.
-```
+
 ## Sample Data Loaded
 
 The system includes:
