@@ -9,9 +9,9 @@ The system is ready to use with sample data already loaded.
 1.  **Clone the repository**
 
     ``` bash
-    git clone <repository-url>
-    cd <project-folder>
+    git clone "https://github.com/anzhub101/SWE401_implementation.git"
     ```
+    In any code editor
 
 2.  **Install dependencies**
 
